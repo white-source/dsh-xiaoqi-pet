@@ -9,6 +9,15 @@ enum L10n {
         isChinese ? zh : en
     }
 
+    static func status(_ task: RemoteTask) -> String {
+        switch task.kind {
+        case "waiting": return text("Needs you", "需要你")
+        case "running": return text("Running", "进行中")
+        case "done": return text("Done", "已完成")
+        default: return ""
+        }
+    }
+
     static func pending(kind: String?, tool: String?) -> String {
         switch kind ?? "" {
         case "approval":

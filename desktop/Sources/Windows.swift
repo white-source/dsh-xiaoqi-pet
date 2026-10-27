@@ -51,6 +51,7 @@ final class PetWindowController {
         panel.isMovableByWindowBackground = false
         panel.isReleasedWhenClosed = false
         panel.animationBehavior = .none
+        panel.isRestorable = false
         panel.acceptsMouseMovedEvents = true
         panel.titleVisibility = .hidden
         panel.titlebarAppearsTransparent = true
@@ -151,6 +152,7 @@ final class BoardWindowController {
         panel.hasShadow = false
         panel.isReleasedWhenClosed = false
         panel.animationBehavior = .none
+        panel.isRestorable = false
 
         let view = BoardView(
             model: model,
@@ -227,6 +229,126 @@ final class BoardWindowController {
     }
 }
 
+final class DrawerWindowController {
+    let model: PetModel
+    let bridge: BridgeClient
+    let panel: XiaoqiPanel
+    private weak var petController: PetWindowController?
+    private var tasksCancellable: AnyCancellable?
+    private var boardCancellable: AnyCancellable?
+    private var fadingOut = false
+
+    init(model: PetModel, bridge: BridgeClient, petController: PetWindowController) {
+        self.model = model
+        self.bridge = bridge
+        self.petController = petController
+        panel = XiaoqiPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 332, height: 220),
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
+        panel.isFloatingPanel = true
+        panel.level = .floating
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        panel.hidesOnDeactivate = false
+        panel.isOpaque = false
+        panel.backgroundColor = .clear
+        panel.hasShadow = false
+        panel.isReleasedWhenClosed = false
+        panel.animationBehavior = .none
+        panel.isRestorable = false
+
+        panel.contentView = NSHostingView(rootView: TaskDrawerView(
+            model: model,
+            onOpen: { [weak self] task in
+                guard let self else { return }
+                self.bridge.openSession(task.id) { _ in }
+                self.model.activateDSH()
+            }
+        ))
+
+        tasksCancellable = model.$tasks
+            .removeDuplicates()
+            .sink { [weak self] _ in self?.refresh() }
+        boardCancellable = model.$boardOpen
+            .removeDuplicates()
+            .sink { [weak self] _ in self?.refresh() }
+        refresh(animated: false)
+    }
+
+    func petVisibilityChanged() {
+        refresh(animated: false)
+    }
+
+    func reposition(near petFrame: NSRect?) {
+        guard panel.isVisible else { return }
+        panel.setFrameOrigin(targetOrigin(for: panel.frame.size, petFrame: petFrame))
+    }
+
+    private func desiredHeight() -> CGFloat {
+        let count = min(model.tasks.count, 4)
+        var height: CGFloat = 24 + CGFloat(count) * 96 + CGFloat(max(0, count - 1)) * 6
+        if model.tasks.count > 4 { height += 22 }
+        return height
+    }
+
+    private func refresh(animated: Bool = true) {
+        guard !model.boardOpen, model.tasks.count >= 2, petController?.isVisible == true else {
+            hide()
+            return
+        }
+        let size = NSSize(width: 332, height: desiredHeight())
+        panel.setContentSize(size)
+        let target = targetOrigin(for: size, petFrame: petController?.panel.frame)
+        if panel.isVisible {
+            panel.alphaValue = 1
+            panel.setFrameOrigin(target)
+            return
+        }
+        let start = NSPoint(x: target.x - 16, y: target.y)
+        panel.setFrameOrigin(start)
+        panel.alphaValue = 0
+        panel.orderFrontRegardless()
+        if animated {
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.22
+                panel.animator().alphaValue = 1
+            }
+        } else {
+            panel.alphaValue = 1
+        }
+        panel.setFrameOrigin(target)
+    }
+
+    private func targetOrigin(for size: NSSize, petFrame: NSRect?) -> NSPoint {
+        guard let pet = petFrame ?? petController?.panel.frame else { return NSPoint(x: 0, y: 0) }
+        let screen = visibleFrame(containing: NSPoint(x: pet.midX, y: pet.midY))
+        var x = pet.maxX + 12
+        if x + size.width > screen.maxX - 8 {
+            x = pet.minX - size.width - 12
+        }
+        x = min(max(x, screen.minX + 8), screen.maxX - size.width - 8)
+        var y = pet.midY - size.height / 2
+        y = min(max(y, screen.minY + 8), screen.maxY - size.height - 8)
+        return NSPoint(x: x, y: y)
+    }
+
+    private func hide() {
+        guard panel.isVisible, !fadingOut else { return }
+        fadingOut = true
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.15
+            panel.animator().alphaValue = 0
+        } completionHandler: { [weak self] in
+            guard let self else { return }
+            self.panel.orderOut(nil)
+            self.panel.alphaValue = 1
+            self.fadingOut = false
+        }
+    }
+}
+
 final class NoticeWindowController {
     private let panel: XiaoqiPanel
     private var hideTimer: Timer?
@@ -247,6 +369,7 @@ final class NoticeWindowController {
         panel.hasShadow = false
         panel.isReleasedWhenClosed = false
         panel.animationBehavior = .none
+        panel.isRestorable = false
         panel.ignoresMouseEvents = true
         panel.alphaValue = 0
     }

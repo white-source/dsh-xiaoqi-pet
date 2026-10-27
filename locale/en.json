@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "Xiaoqi Desk Pet",
-    "description": "A DSH companion with a real macOS desktop pet. It shows each running session's current checklist item and concrete action, raises completion and attention notices, and stays pinned anywhere on the desktop."
+    "description": "A DSH companion with a real macOS desktop pet. Multiple running sessions fan out as compact drawers showing the current checklist item and concrete action, plus completion and attention notices."
   }
 }

@@ -10,6 +10,7 @@ Both read the same live session state. The native pet is a separate always-on-to
 ## What it does
 
 - **One pet, every session.** The board groups sessions into *Needs you*, *In progress*, and *Just finished*, with title, project folder, status, and update time.
+- **Multiple task drawers.** When two or more sessions are active, compact drawer cards fan out beside the native pet, one per task. Each shows that task's current checklist item or concrete action and elapsed time, so several sessions stay visible at once.
 - **Task-specific progress while you are elsewhere.** The board shows the current checklist item, the concrete action in flight (for example `修改 client.js`, `运行：Build the macOS app`, `读取 README.md`), elapsed time, and the last three actions. The native pet's caption follows the current task or action.
 - **Live, not polled.** The in-page board reads the Session list and status snapshots supplied to the `shell.overlay` slot. The native app polls the token-protected local bridge every 1.2 seconds.
 - **Speaks up.** A new approval, question, plan review, or a session finishing in the background raises a notice. In the native app the notice is a separate non-blocking desktop bubble.

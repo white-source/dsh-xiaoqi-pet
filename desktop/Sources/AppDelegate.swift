@@ -7,6 +7,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let bridge = BridgeClient()
     private var petWindow: PetWindowController!
     private var boardWindow: BoardWindowController!
+    private var drawerWindow: DrawerWindowController!
     private var noticeWindow: NoticeWindowController!
     private var statusItem: NSStatusItem!
     private var pollTimer: Timer?
@@ -27,6 +28,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         petWindow = PetWindowController(model: model)
         boardWindow = BoardWindowController(model: model, bridge: bridge, petController: petWindow)
+        drawerWindow = DrawerWindowController(model: model, bridge: bridge, petController: petWindow)
         noticeWindow = NoticeWindowController()
 
         model.onNotice = { [weak self] notice in
@@ -36,6 +38,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         petWindow.onFrameChanged = { [weak self] frame in
             guard let self else { return }
             self.boardWindow.reposition(near: frame)
+            self.drawerWindow.reposition(near: frame)
             self.noticeWindow.reposition(near: frame)
         }
 
@@ -120,8 +123,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             model.boardOpen = false
             noticeWindow.hide()
             petWindow.hide()
+            drawerWindow.petVisibilityChanged()
         } else {
             petWindow.show()
+            drawerWindow.petVisibilityChanged()
         }
     }
 

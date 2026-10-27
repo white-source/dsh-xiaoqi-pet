@@ -522,6 +522,170 @@ struct TaskRowView: View {
     }
 }
 
+struct TaskDrawerView: View {
+    @ObservedObject var model: PetModel
+    let onOpen: (RemoteTask) -> Void
+
+    private var visible: [RemoteTask] { Array(model.tasks.prefix(4)) }
+    private var extra: Int { max(0, model.tasks.count - 4) }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(Array(visible.enumerated()), id: \.element.id) { index, task in
+                DrawerTaskCard(task: task, index: index, onOpen: onOpen)
+                    .transition(.move(edge: .leading).combined(with: .opacity))
+            }
+            if extra > 0 {
+                Text(L10n.text("+\(extra) more in the board", "看板里还有 \(extra) 个任务"))
+                    .font(.system(size: 10.5, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .padding(.leading, 10)
+                    .padding(.top, 2)
+            }
+        }
+        .frame(width: 308, alignment: .leading)
+        .padding(12)
+        .animation(.spring(response: 0.36, dampingFraction: 0.84), value: visible.map(\.id))
+    }
+}
+
+struct DrawerTaskCard: View {
+    let task: RemoteTask
+    let index: Int
+    let onOpen: (RemoteTask) -> Void
+    @State private var hovering = false
+
+    private var statusColor: Color {
+        switch task.kind {
+        case "waiting": return PetMood.waiting.color
+        case "running": return PetMood.running.color
+        case "done": return PetMood.done.color
+        default: return .secondary
+        }
+    }
+
+    private var progress: RemoteProgress? { task.progress }
+    private var todo: String { progress.map(L10n.todoLine) ?? "" }
+    private var todoCount: String { progress.map(L10n.todoCount) ?? "" }
+    private var actionText: String {
+        if task.kind == "waiting" {
+            return L10n.pending(kind: task.pendingKind, tool: task.pendingTool)
+        }
+        if let progress { return L10n.actionLine(progress) }
+        return L10n.status(task)
+    }
+    private var elapsed: String {
+        if let progress { return L10n.elapsed(progress.elapsedMs) }
+        return L10n.relative(task.updatedAt)
+    }
+    private var actionSymbol: String {
+        if task.kind == "waiting" { return "exclamationmark.circle.fill" }
+        guard let progress, let action = progress.action else { return "circle.dotted" }
+        switch action.kind {
+        case "read", "write", "edit": return "doc.text.fill"
+        case "bash": return "terminal.fill"
+        case "glob", "grep": return "magnifyingglass"
+        case "image": return "photo.fill"
+        case "plugin": return "puzzlepiece.extension.fill"
+        case "inspect": return "wrench.and.screwdriver.fill"
+        case "search", "fetch": return "globe"
+        case "subagent": return "person.2.fill"
+        case "workflow": return "point.3.connected.trianglepath.dotted"
+        case "todo": return "checklist"
+        default: return "circle.dotted"
+        }
+    }
+
+    var body: some View {
+        Button {
+            onOpen(task)
+        } label: {
+            HStack(alignment: .top, spacing: 9) {
+                RoundedRectangle(cornerRadius: 2, style: .continuous)
+                    .fill(statusColor)
+                    .frame(width: 3)
+                    .padding(.vertical, 3)
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 6) {
+                        Text(task.title)
+                            .font(.system(size: 12.2, weight: .semibold))
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                        Spacer(minLength: 4)
+                        Text(L10n.status(task))
+                            .font(.system(size: 9.4, weight: .medium))
+                            .foregroundStyle(statusColor)
+                            .lineLimit(1)
+                    }
+                    if !todo.isEmpty {
+                        HStack(spacing: 5) {
+                            Image(systemName: "checklist")
+                                .font(.system(size: 9.5, weight: .semibold))
+                                .foregroundStyle(statusColor)
+                            Text(todo)
+                                .font(.system(size: 10.7, weight: .medium))
+                                .foregroundStyle(.primary.opacity(0.82))
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                            Spacer(minLength: 4)
+                            Text(todoCount)
+                                .font(.system(size: 9.4, weight: .medium))
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
+                    HStack(spacing: 5) {
+                        Image(systemName: actionSymbol)
+                            .font(.system(size: 9.5, weight: .semibold))
+                            .foregroundStyle(statusColor)
+                        Text(actionText)
+                            .font(.system(size: 11.4, weight: .medium))
+                            .foregroundStyle(.primary.opacity(0.9))
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                        Spacer(minLength: 4)
+                        Text(elapsed)
+                            .font(.system(size: 9.5, weight: .medium))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .fixedSize()
+                    }
+                    if let progress, !progress.trail.isEmpty {
+                        Text(L10n.trail(progress))
+                            .font(.system(size: 9.5, weight: .medium))
+                            .foregroundStyle(.primary.opacity(0.58))
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                    }
+                }
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundStyle(.tertiary)
+                    .opacity(hovering ? 1 : 0.12)
+                    .padding(.top, 5)
+            }
+            .padding(.horizontal, 11)
+            .padding(.vertical, 9)
+            .frame(width: 285, height: 96, alignment: .topLeading)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(.regularMaterial)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(Color.primary.opacity(hovering ? 0.18 : 0.09), lineWidth: 0.6)
+            )
+            .shadow(color: .black.opacity(hovering ? 0.26 : 0.16), radius: hovering ? 16 : 10, y: 6)
+            .offset(x: CGFloat(index) * 6 + (hovering ? 5 : 0))
+            .animation(.easeOut(duration: 0.14), value: hovering)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        .help(L10n.text("Focus DeepSeek Harness and open this session", "切到 DeepSeek Harness 并打开这个会话"))
+    }
+}
+
 struct NoticeView: View {
     let notice: PetNotice
 
