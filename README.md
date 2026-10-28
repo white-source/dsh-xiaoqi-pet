@@ -2,8 +2,10 @@
 
 Xiaoqi is a companion for DeepSeek Harness with two surfaces:
 
-- a frame-wide pet inside the DSH Web UI, and
-- a native macOS pet that lives on the real desktop, outside the Harness window.
+- a frame-wide pet inside the DSH Web UI (all platforms), and
+- an always-on-top desktop pet outside the Harness window:
+  - macOS: native Swift app,
+  - Windows/Linux: Electron companion (source and build scripts included).
 
 Both read the same live session state. The native pet is a separate always-on-top, transparent window; drag it anywhere and pin it. When it connects, the in-page pet hides so you do not see two Xiaoqis. Quit the native app and the in-page pet comes back.
 
@@ -38,7 +40,9 @@ dsh plugin --profile web add dsh-xiaoqi-pet
 
 Then reopen or reload the DSH Web UI. The in-page pet appears near the bottom-left.
 
-## Install the native macOS pet
+## Install the desktop pet
+
+### macOS native app
 
 Requires macOS 13 or later and Xcode command-line tools.
 
@@ -54,6 +58,25 @@ If the native app is not running, the in-page board's monitor button tries to la
 
 See [desktop/README.md](desktop/README.md) for build details and the local bridge contract.
 
+### Windows / Linux Electron companion
+
+The cross-platform companion lives in `desktop/electron`. It reads the same bridge, shows the same task colors, and uses the same click-to-open flow.
+
+```sh
+cd desktop/electron
+npm install
+npm start
+```
+
+Build artifacts:
+
+```sh
+npm run dist:win     # Windows zip
+npm run dist:linux   # Linux AppImage
+```
+
+See [desktop/electron/README.md](desktop/electron/README.md). The Windows/Linux packages are configured but have not been run on those operating systems in this environment; build and verify them on each target OS before calling them release-ready.
+
 ## What "pinned" means
 
 - **In-page pet:** a frame-wide overlay inside the DSH Web UI. It stays above the sidebar, conversation, and composer, and remembers its viewport-relative position.
@@ -63,7 +86,8 @@ See [desktop/README.md](desktop/README.md) for build details and the local bridg
 
 - DSH `0.2.1-rc.1` through `0.2.1-rc.3`
 - Chromium-based DSH Web UI for the in-page pet
-- macOS 13+ for the native pet
+- macOS 13+ for the Swift pet
+- Windows/Linux for the Electron companion
 - No runtime dependencies, no install scripts, no outbound network calls
 
 ## Development

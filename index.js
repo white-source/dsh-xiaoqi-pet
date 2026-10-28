@@ -32,9 +32,25 @@ function appSupportPath() {
 }
 
 function desktopAppPaths() {
+  if (process.platform === 'darwin') {
+    return [
+      join(homedir(), 'Applications', 'Xiaoqi Pet.app'),
+      '/Applications/Xiaoqi Pet.app',
+    ];
+  }
+  if (process.platform === 'win32') {
+    const local = process.env.LOCALAPPDATA ?? join(homedir(), 'AppData', 'Local');
+    const programFiles = process.env.ProgramFiles ?? 'C:\\Program Files';
+    return [
+      join(local, 'Programs', 'Xiaoqi Pet', 'Xiaoqi Pet.exe'),
+      join(local, 'XiaoqiPet', 'Xiaoqi Pet.exe'),
+      join(programFiles, 'Xiaoqi Pet', 'Xiaoqi Pet.exe'),
+    ];
+  }
   return [
-    join(homedir(), 'Applications', 'Xiaoqi Pet.app'),
-    '/Applications/Xiaoqi Pet.app',
+    join(homedir(), '.local', 'bin', 'xiaoqi-pet'),
+    join(homedir(), '.local', 'share', 'xiaoqi-pet', 'Xiaoqi Pet.AppImage'),
+    '/opt/Xiaoqi Pet/xiaoqi-pet',
   ];
 }
 
@@ -553,13 +569,12 @@ export function apply(ctx) {
   }
 
   async function launchDesktop() {
-    if (process.platform !== 'darwin') {
-      return { ok: false, error: 'unsupported-platform' };
-    }
     const appPath = desktopAppPaths().find((candidate) => existsSync(candidate));
     if (!appPath) return { ok: false, error: 'desktop-app-not-installed' };
     try {
-      const child = spawn('open', [appPath], { detached: true, stdio: 'ignore' });
+      const child = process.platform === 'darwin'
+        ? spawn('open', [appPath], { detached: true, stdio: 'ignore' })
+        : spawn(appPath, [], { detached: true, stdio: 'ignore', windowsHide: true });
       child.unref();
       return { ok: true, appPath };
     } catch {

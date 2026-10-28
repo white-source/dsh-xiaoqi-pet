@@ -2,8 +2,10 @@
 
 小栖是 DeepSeek Harness 的桌宠，有两个形态：
 
-- DSH 网页里的全帧浮层桌宠；
-- 真正运行在 macOS 桌面、在 Harness 窗口之外的独立置顶桌宠。
+- DSH 网页里的全帧浮层桌宠（全平台）；
+- 在 Harness 窗口之外的独立置顶桌宠：
+  - macOS：原生 Swift App；
+  - Windows/Linux：Electron 伴侣（包含源码和构建脚本）。
 
 两边读取同一份实时会话状态。原生桌宠连接后，网页里的桌宠会自动隐藏，避免出现两只；退出原生 App，网页桌宠就会回来。
 
@@ -36,7 +38,9 @@ dsh plugin --profile web add dsh-xiaoqi-pet
 
 然后重新打开或刷新 DSH Web UI。网页桌宠默认在左下角。
 
-## 安装 macOS 原生桌宠
+## 安装桌面桌宠
+
+### macOS 原生 App
 
 需要 macOS 13+ 和 Xcode 命令行工具。
 
@@ -52,6 +56,25 @@ App 是菜单栏附属应用（`LSUIElement`），没有 Dock 图标。菜单栏
 
 构建细节和本地桥接协议见 [desktop/README.md](desktop/README.md)。
 
+### Windows / Linux Electron 伴侣
+
+跨平台伴侣在 `desktop/electron`，读取同一个桥接，使用相同的任务配色和点击跳转流程。
+
+```sh
+cd desktop/electron
+npm install
+npm start
+```
+
+构建：
+
+```sh
+npm run dist:win     # Windows zip
+npm run dist:linux   # Linux AppImage
+```
+
+详见 [desktop/electron/README.md](desktop/electron/README.md)。Windows/Linux 包已配置，但当前环境未在对应系统上实机运行；发布前需在目标系统或 GitHub Actions 中构建验证。
+
 ## “固定”的范围
 
 - **网页桌宠：** DSH Web UI 内的全帧浮层，滚动、切换会话时始终停在上层，位置按视口相对坐标保存。
@@ -61,7 +84,8 @@ App 是菜单栏附属应用（`LSUIElement`），没有 Dock 图标。菜单栏
 
 - DSH `0.2.1-rc.1` 至 `0.2.1-rc.3`
 - 网页桌宠需要基于 Chromium 的 DSH Web UI
-- 原生桌宠需要 macOS 13+
+- macOS 原生桌宠需要 macOS 13+
+- Windows/Linux 使用 Electron 伴侣
 - 无运行时依赖、无安装脚本、无对外网络请求
 
 ## 开发

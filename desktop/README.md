@@ -42,3 +42,7 @@ The plugin also polls `/xiaoqi-pet/api/progress` for the in-page board. When the
 ## Uninstall
 
 Quit from the paw menu, then remove `~/Applications/Xiaoqi Pet.app`. The DSH plugin can stay installed; without the app, it simply runs in-page.
+
+## Windows / Linux
+
+This directory is the native macOS Swift app. For Windows/Linux, use the cross-platform Electron companion in [electron/README.md](electron/README.md).

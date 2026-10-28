@@ -2,3 +2,5 @@
 dist/
 desktop/dist/
 assets/screenshots/
+desktop/electron/node_modules/
+desktop/electron/dist/

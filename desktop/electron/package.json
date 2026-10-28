@@ -1,0 +1,73 @@
+{
+  "name": "xiaoqi-pet-desktop",
+  "version": "1.5.0",
+  "private": true,
+  "description": "Cross-platform Xiaoqi desktop companion for Windows, Linux and macOS.",
+  "main": "main.js",
+  "license": "MIT",
+  "author": "white-source",
+  "scripts": {
+    "start": "electron .",
+    "dist:mac": "electron-builder --mac",
+    "dist:win": "electron-builder --win",
+    "dist:linux": "electron-builder --linux",
+    "dist:win:x64": "electron-builder --win zip --x64",
+    "dist:linux:x64": "electron-builder --linux AppImage --x64"
+  },
+  "devDependencies": {
+    "electron": "45.1.0",
+    "electron-builder": "26.18.0"
+  },
+  "build": {
+    "appId": "com.xiaoqi.deskpet",
+    "productName": "Xiaoqi Pet",
+    "artifactName": "Xiaoqi-Pet-${version}-${os}-${arch}.${ext}",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.png"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "category": "Utility",
+      "icon": "assets/icon.png"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dir",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.utilities",
+      "icon": "assets/icon.png"
+    }
+  }
+}

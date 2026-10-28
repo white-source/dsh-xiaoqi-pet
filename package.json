@@ -1,9 +1,9 @@
 {
   "name": "dsh-xiaoqi-pet",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "private": false,
   "type": "module",
-  "description": "Xiaoqi Desk Pet — a DSH companion with a real macOS desktop pet. Color-coded, bordered task cards, per-task drawers and task-name bubbles, with notices and click-to-open.",
+  "description": "Xiaoqi Desk Pet — a DSH companion with a macOS native pet and a cross-platform Electron companion for Windows/Linux. Color-coded task cards, progress, notices and click-to-open.",
   "license": "MIT",
   "keywords": [
     "dsh",
@@ -13,7 +13,10 @@
     "desktop-pet",
     "macos",
     "session-monitor",
-    "notifications"
+    "notifications",
+    "windows",
+    "linux",
+    "electron"
   ],
   "exports": {
     ".": "./index.js",
@@ -35,7 +38,16 @@
     "desktop/Resources/pet.svg",
     "desktop/Info.plist",
     "desktop/build.sh",
-    "desktop/README.md"
+    "desktop/README.md",
+    "desktop/electron/package.json",
+    "desktop/electron/package-lock.json",
+    "desktop/electron/main.js",
+    "desktop/electron/preload.js",
+    "desktop/electron/renderer/*.html",
+    "desktop/electron/renderer/*.js",
+    "desktop/electron/renderer/*.css",
+    "desktop/electron/assets/*",
+    "desktop/electron/README.md"
   ],
   "dsh": {
     "bundle": {

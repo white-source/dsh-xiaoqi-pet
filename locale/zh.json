@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "小栖桌宠",
-    "description": "带原生 macOS 桌面桌宠的 DSH 伴侣：每个任务都是独立配色和细边框的卡片，多任务可通过抽屉卡片查看并点击跳转，支持进度详情与通知。"
+    "description": "带 macOS 原生桌宠与 Windows/Linux Electron 桌宠的 DSH 伴侣。每个任务独立配色和细边框，支持多任务抽屉、进度与通知。"
   }
 }
