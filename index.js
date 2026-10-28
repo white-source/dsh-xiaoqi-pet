@@ -671,8 +671,8 @@ export function apply(ctx) {
       const path = url.pathname;
       try {
         if (request.method === 'GET' && path === `${BASE}/api/balance`) {
-          if (!authorized(request)) {
-            json(response, 401, { error: 'unauthorized' });
+          if (!authorized(request) && !clientRequest(request)) {
+            json(response, 403, { error: 'untrusted-origin' });
             return;
           }
           if (url.searchParams.get('refresh') === '1') {

@@ -112,6 +112,7 @@ window.__ModuleLoader__.load({
       emptyBody: 'Xiaoqi will speak up when a task starts running or needs you.',
       emptyCount: '{count} sessions are resting',
       emptyNoSessions: 'No sessions yet. Start one and Xiaoqi will keep watch.',
+      balanceDetail: 'DSH account balance {amount} · recharge {recharge} · bonus {bonus}',
       loading: 'Reading sessions…',
       footerHint: 'Drag Xiaoqi anywhere · pin with the pin',
       footerPinned: 'Position pinned · click the pin to unlock',
@@ -197,6 +198,7 @@ window.__ModuleLoader__.load({
       emptyBody: '任务开始运行或需要你处理时，小栖会第一时间提醒。',
       emptyCount: '{count} 个会话在休息',
       emptyNoSessions: '还没有会话。开始一个任务，小栖会替你看守。',
+      balanceDetail: 'DSH 账户余额 {amount} · 充值 {recharge} · 赠送 {bonus}',
       loading: '正在读取会话…',
       footerHint: '拖动小栖到任意位置 · 用图钉固定',
       footerPinned: '位置已固定 · 点击图钉可解锁',
@@ -263,6 +265,25 @@ window.__ModuleLoader__.load({
         height: 100%;
         overflow: visible;
         filter: drop-shadow(0 8px 14px rgba(0, 0, 0, .18));
+      .xq-balance {
+        position: absolute;
+        left: 50%;
+        top: 73%;
+        transform: translate(-50%, -50%);
+        padding: 1px 5px;
+        border: 1px solid rgba(255, 255, 255, 0.24);
+        border-radius: 999px;
+        background: rgba(8, 24, 23, 0.74);
+        color: #fff9ec;
+        font-size: 8.8px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        line-height: 13px;
+        letter-spacing: 0.01em;
+        white-space: nowrap;
+        pointer-events: none;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.24);
+      }
         transition: transform .16s ease-out, filter .16s ease-out;
       }
       .xq-art .xq-body {
@@ -1217,6 +1238,22 @@ window.__ModuleLoader__.load({
         h('circle', { cx: 88, cy: 43, r: 1.7, fill: '#A6F0DD' })));
     }
 
+
+    function balanceLabel(balance) {
+      if (!balance || balance.status !== 'ready' || !balance.amount) return '';
+      return `${balance.currency === 'USD' ? '$' : '¥'}${balance.amount}`;
+    }
+
+    function balanceDetail(balance, t) {
+      if (!balance || balance.status !== 'ready') return '';
+      const symbol = balance.currency === 'USD' ? '$' : '¥';
+      return t('balanceDetail', {
+        amount: `${symbol}${balance.amount || '0'}`,
+        recharge: `${symbol}${balance.recharge || '0'}`,
+        bonus: `${symbol}${balance.bonus || '0'}`,
+      });
+    }
+
     function TaskRow({ task, t, now, onOpen, progress, accent }) {
       const meta = taskMeta(task, t, now, progress);
       const actionText = progress && progress.action
@@ -1283,6 +1320,7 @@ window.__ModuleLoader__.load({
       const [desktopMessage, setDesktopMessage] = React.useState('');
       const [desktopActive, setDesktopActive] = React.useState(false);
       const [progressById, setProgressById] = React.useState({});
+      const [balance, setBalance] = React.useState(null);
 
       const posRef = React.useRef(pos);
       const openRef = React.useRef(open);
@@ -1293,6 +1331,26 @@ window.__ModuleLoader__.load({
 
       React.useEffect(() => { posRef.current = pos; }, [pos]);
       React.useEffect(() => { openRef.current = open; }, [open]);
+
+      React.useEffect(() => {
+        let cancelled = false;
+        const load = async () => {
+          try {
+            const response = await fetch(`${BRIDGE_BASE}/api/balance?refresh=1`, { cache: 'no-store' });
+            if (!response.ok) return;
+            const value = await response.json();
+            if (!cancelled) setBalance(value.balance ?? null);
+          } catch {
+            // The bridge is optional; keep the last known balance.
+          }
+        };
+        void load();
+        const timer = window.setInterval(load, 60_000);
+        return () => {
+          cancelled = true;
+          window.clearInterval(timer);
+        };
+      }, []);
 
       const tasks = deriveTasks(list, statuses, dismissed);
       const waiting = tasks.filter((task) => task.kind === 'waiting');
@@ -1676,6 +1734,13 @@ window.__ModuleLoader__.load({
           onClick: onPetClick,
         },
         h(PetArt, { mood }),
+        balanceLabel(balance)
+          ? h('span', {
+            className: 'xq-balance',
+            'aria-hidden': 'true',
+            title: balanceDetail(balance, t),
+          }, balanceLabel(balance))
+          : null,
         badgeCount > 0
           ? h('span', {
             className: `xq-badge ${badgeKind}`,
