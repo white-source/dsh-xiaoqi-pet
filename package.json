@@ -1,9 +1,9 @@
 {
   "name": "dsh-xiaoqi-pet",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "private": false,
   "type": "module",
-  "description": "Xiaoqi Desk Pet — a DSH companion with a real macOS desktop pet. One task gets a task-name bubble; multiple tasks use color-coded drawer cards with task-specific progress and click-to-open.",
+  "description": "Xiaoqi Desk Pet — a DSH companion with a real macOS desktop pet. Color-coded, bordered task cards, per-task drawers and task-name bubbles, with notices and click-to-open.",
   "license": "MIT",
   "keywords": [
     "dsh",

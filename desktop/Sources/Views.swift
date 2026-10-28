@@ -262,19 +262,20 @@ struct BoardView: View {
     }
 
     private var content: some View {
-        ScrollView(.vertical, showsIndicators: false) {
+        let palette = TaskPalette.assignments(for: model.tasks)
+        return ScrollView(.vertical, showsIndicators: false) {
             if model.tasks.isEmpty {
                 emptyState
             } else {
                 VStack(alignment: .leading, spacing: 4) {
                     if !model.waiting.isEmpty {
-                        section(L10n.text("Needs you", "需要你"), tasks: model.waiting)
+                        section(L10n.text("Needs you", "需要你"), tasks: model.waiting, palette: palette)
                     }
                     if !model.running.isEmpty {
-                        section(L10n.text("In progress", "进行中"), tasks: model.running)
+                        section(L10n.text("In progress", "进行中"), tasks: model.running, palette: palette)
                     }
                     if !model.done.isEmpty {
-                        section(L10n.text("Just finished", "刚完成"), tasks: model.done)
+                        section(L10n.text("Just finished", "刚完成"), tasks: model.done, palette: palette)
                     }
                 }
                 .padding(.horizontal, 10)
@@ -306,7 +307,7 @@ struct BoardView: View {
         .padding(20)
     }
 
-    private func section(_ label: String, tasks: [RemoteTask]) -> some View {
+    private func section(_ label: String, tasks: [RemoteTask], palette: [String: Color]) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack {
                 Text(label.uppercased())
@@ -322,7 +323,11 @@ struct BoardView: View {
             .padding(.top, 7)
             .padding(.bottom, 3)
             ForEach(tasks) { task in
-                TaskRowView(task: task, onOpen: onOpenTask)
+                TaskRowView(
+                    task: task,
+                    accent: palette[task.id] ?? PetMood.running.color,
+                    onOpen: onOpenTask
+                )
             }
         }
     }
@@ -368,17 +373,9 @@ struct BoardIconButton: View {
 
 struct TaskRowView: View {
     let task: RemoteTask
+    let accent: Color
     let onOpen: (RemoteTask) -> Void
     @State private var hovering = false
-
-    private var dotColor: Color {
-        switch task.kind {
-        case "waiting": return PetMood.waiting.color
-        case "running": return PetMood.running.color
-        case "done": return PetMood.done.color
-        default: return .secondary
-        }
-    }
 
     private func progressColor(_ phase: String) -> Color {
         switch phase {
@@ -429,9 +426,9 @@ struct TaskRowView: View {
         } label: {
             HStack(spacing: 9) {
                 Circle()
-                    .fill(dotColor)
+                    .fill(accent)
                     .frame(width: 7, height: 7)
-                    .overlay(Circle().strokeBorder(dotColor.opacity(0.18), lineWidth: 4))
+                    .overlay(Circle().strokeBorder(accent.opacity(0.2), lineWidth: 4))
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 5) {
                         Text(task.title)
@@ -509,13 +506,25 @@ struct TaskRowView: View {
                     .foregroundStyle(.tertiary)
                     .opacity(hovering ? 1 : 0.15)
             }
-            .padding(.horizontal, 7)
-            .padding(.vertical, 7)
+            .padding(.leading, 12)
+            .padding(.trailing, 8)
+            .padding(.vertical, 8)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    .fill(hovering ? Color.primary.opacity(0.065) : Color.clear)
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(hovering ? accent.opacity(0.12) : accent.opacity(0.045))
             )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(accent.opacity(hovering ? 0.52 : 0.32), lineWidth: 0.8)
+            )
+            .overlay(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 1.5, style: .continuous)
+                    .fill(accent)
+                    .frame(width: 3)
+                    .padding(.vertical, 9)
+                    .offset(x: 1)
+            }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

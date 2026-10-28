@@ -197,7 +197,7 @@ final class BoardWindowController {
                 height += 26
                 for task in group {
                     let hasProgress = task.progress != nil && (task.kind == "running" || task.kind == "waiting")
-                    height += hasProgress ? 128 : 46
+                    height += hasProgress ? 136 : 54
                 }
             }
             height += CGFloat(max(0, groups.count - 1)) * 4

@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "Xiaoqi Desk Pet",
-    "description": "A DSH companion with a real macOS desktop pet. One active task gets a task-name bubble; multiple tasks appear as color-coded drawer cards with task-specific progress and click-to-open."
+    "description": "A DSH companion with a real macOS desktop pet. Every task is a color-coded bordered card; multiple tasks can be opened from per-task drawer cards, with notices and progress details."
   }
 }

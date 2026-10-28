@@ -16,6 +16,28 @@ window.__ModuleLoader__.load({
     const EMPTY_STATUS = new Map();
     const selectAll = (value) => value;
     const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+    const TASK_COLORS = ['#2A8A80', '#D9942F', '#4F8CFF', '#A78BFA', '#E879A6', '#7CB342', '#E76F51'];
+
+    function taskColorIndex(id) {
+      let hash = 1469598103934665603n;
+      for (const byte of new TextEncoder().encode(String(id))) {
+        hash ^= BigInt(byte);
+        hash = BigInt.asUintN(64, hash * 1099511628211n);
+      }
+      return Number(hash % BigInt(TASK_COLORS.length));
+    }
+
+    function taskColorMap(tasks) {
+      const used = new Set();
+      const result = {};
+      for (const task of tasks) {
+        let index = taskColorIndex(task.id);
+        while (used.has(index)) index = (index + 1) % TASK_COLORS.length;
+        used.add(index);
+        result[task.id] = TASK_COLORS[index];
+      }
+      return result;
+    }
 
     const EN = {
       appName: 'Xiaoqi',
@@ -528,22 +550,23 @@ window.__ModuleLoader__.load({
         text-transform: uppercase;
       }
       .xq-section-count { font-variant-numeric: tabular-nums; font-weight: 600; opacity: .8; }
-      .xq-list { display: flex; flex-direction: column; gap: 2px; }
+      .xq-list { display: flex; flex-direction: column; gap: 6px; }
       .xq-row {
         width: 100%;
         display: flex;
         align-items: center;
         gap: 10px;
-        padding: 9px 8px 9px 9px;
-        border: 0;
+        padding: 9px 8px 9px 10px;
+        border: 1px solid color-mix(in srgb, var(--xq-task-color, var(--dsw-alias-border-l1, #7f7f8c)) 38%, transparent);
+        border-left: 3px solid var(--xq-task-color, var(--dsw-alias-border-l2, #7f7f8c));
         border-radius: 12px;
-        background: transparent;
+        background: color-mix(in srgb, var(--xq-task-color, transparent) 5%, transparent);
         color: inherit;
         text-align: left;
         font: inherit;
         cursor: pointer;
       }
-      .xq-row:hover { background: color-mix(in srgb, var(--dsw-alias-label-primary, #fff) 7%, transparent); }
+      .xq-row:hover { background: color-mix(in srgb, var(--xq-task-color, var(--dsw-alias-label-primary)) 10%, transparent); }
       .xq-row-dot {
         flex: 0 0 8px;
         width: 8px;
@@ -562,6 +585,7 @@ window.__ModuleLoader__.load({
         animation: xq-live 1.5s ease-in-out infinite;
       }
       .xq-row-dot.done { background: var(--dsw-alias-state-success-primary, #16845e); }
+      .xq-row .xq-row-dot { background: var(--xq-task-color, var(--dsw-alias-state-idle-primary, #7b7e87)); }
       .xq-row-copy { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; }
       .xq-row-title-line { display: flex; align-items: center; gap: 6px; min-width: 0; }
       .xq-row-title {
@@ -1193,7 +1217,7 @@ window.__ModuleLoader__.load({
         h('circle', { cx: 88, cy: 43, r: 1.7, fill: '#A6F0DD' })));
     }
 
-    function TaskRow({ task, t, now, onOpen, progress }) {
+    function TaskRow({ task, t, now, onOpen, progress, accent }) {
       const meta = taskMeta(task, t, now, progress);
       const actionText = progress && progress.action
         ? actionLabel(progress.action, t)
@@ -1208,6 +1232,7 @@ window.__ModuleLoader__.load({
       return h('button', {
         type: 'button',
         className: 'xq-row',
+        style: { '--xq-task-color': accent || 'var(--dsw-alias-label-secondary, #b8bbc2)' },
         title: `${task.title}${task.project ? ` — ${task.project}` : ''}\n${t('openSession')}`,
         onClick: () => onOpen(task),
       },
@@ -1621,6 +1646,7 @@ window.__ModuleLoader__.load({
         { key: 'running', label: t('sectionRunning'), items: running },
         { key: 'done', label: t('sectionDone'), items: done },
       ].filter((section) => section.items.length > 0);
+      const taskColors = taskColorMap(tasks);
       const panelLabel = petPanelLabel(t, waiting.length, running.length, done.length);
 
       if (desktopActive) return null;
@@ -1739,7 +1765,7 @@ window.__ModuleLoader__.load({
                     h('span', null, section.label),
                     h('span', { className: 'xq-section-count' }, String(section.items.length))),
                   h('div', { className: 'xq-list' },
-                    section.items.map((task) => h(TaskRow, { key: task.id, task, t, now, onOpen: openTask, progress: progressById[task.id] })))))),
+                    section.items.map((task) => h(TaskRow, { key: task.id, task, t, now, onOpen: openTask, progress: progressById[task.id], accent: taskColors[task.id] })))))),
           h('footer', { className: 'xq-panel-foot' },
             h('span', { className: 'xq-foot-pin', 'aria-hidden': 'true' }, h(PinIcon, { filled: locked })),
             h('span', null, desktopMessage || (locked ? t('footerPinned') : t('footerHint')))))
