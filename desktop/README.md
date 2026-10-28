@@ -22,6 +22,7 @@ The app is an `LSUIElement` (no Dock icon). Use the paw icon in the menu bar to 
 - The caption under the pet follows the active task: the current checklist item or concrete action where one is available, otherwise the phase (`Thinking`, `Running a tool`, `Writing the answer`).
 - With one active task, a compact bubble under the pet begins with the task name and shows its action and elapsed time.
 - With two or more sessions, the bottom bubble is hidden and a stack of color-coded drawer cards slides out beside the pet. Each task has its own stable color; cards show the current checklist item/action, elapsed time and recent trail. Clicking a card opens that session in DSH.
+- The signed-in DSH account wallet balance is shown as a compact badge on the pet's belly.
 - Inside the board, every task is a separate card with a thin border in its own stable task color.
 - The board row shows the current checklist item and concrete action (for example `修改 client.js` or `运行：Build the macOS app`), elapsed time, and the last three actions.
 - Clicking a row queues an open-session command for DSH and brings the Harness window forward.

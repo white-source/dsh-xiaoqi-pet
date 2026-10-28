@@ -1,6 +1,6 @@
 {
   "name": "xiaoqi-pet-desktop",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "private": true,
   "description": "Cross-platform Xiaoqi desktop companion for Windows, Linux and macOS.",
   "main": "main.js",

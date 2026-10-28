@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "小栖桌宠",
-    "description": "带 macOS 原生桌宠与 Windows/Linux Electron 桌宠的 DSH 伴侣。每个任务独立配色和细边框，支持多任务抽屉、进度与通知。"
+    "description": "带 macOS 原生桌宠与 Windows/Linux Electron 桌宠的 DSH 伴侣。桌宠肚子上显示 DSH 账户余额，并支持任务配色、进度与通知。"
   }
 }

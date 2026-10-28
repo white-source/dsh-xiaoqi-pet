@@ -4,6 +4,7 @@
   const Xiaoqi = window.Xiaoqi;
   const stage = document.getElementById('stage');
   const badge = document.getElementById('badge');
+  const balance = document.getElementById('balance');
   const bubble = document.getElementById('bubble');
   const bubbleTitle = document.getElementById('bubble-title');
   const bubbleDot = document.getElementById('bubble-dot');
@@ -51,6 +52,16 @@
     } else {
       badge.className = 'pet-badge';
       badge.textContent = '';
+    }
+
+    const balanceLabel = Xiaoqi.balanceText(state.balance);
+    if (balanceLabel) {
+      balance.hidden = false;
+      balance.textContent = balanceLabel;
+      balance.title = Xiaoqi.balanceDetail(state.balance);
+    } else {
+      balance.hidden = true;
+      balance.textContent = '';
     }
 
     if (tasks.length === 1) {

@@ -424,6 +424,7 @@ async function poll() {
       connected: true,
       tasks,
       source: typeof value.source === 'string' ? value.source : 'host',
+      balance: value.balance ?? null,
     });
     failureCount = 0;
   } catch {
@@ -494,6 +495,7 @@ function sendState() {
     connected: state.connected,
     tasks: state.tasks,
     source: state.source,
+    balance: state.balance,
   };
   for (const win of [petWindow, panelWindow]) {
     if (win && !win.isDestroyed() && !win.webContents.isLoading()) {

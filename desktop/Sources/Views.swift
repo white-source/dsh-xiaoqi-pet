@@ -60,6 +60,20 @@ struct PetStageView: View {
                             .foregroundStyle(mood == .idle ? Color.secondary : mood.color)
                             .frame(width: 128, height: 128)
                     }
+                    if let text = model.balanceText {
+                        Text(text)
+                            .font(.system(size: 10.2, weight: .bold, design: .rounded))
+                            .monospacedDigit()
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2.5)
+                            .background(Capsule().fill(Color.black.opacity(0.34)))
+                            .overlay(Capsule().strokeBorder(Color.white.opacity(0.18), lineWidth: 0.5))
+                            .offset(y: 31)
+                            .allowsHitTesting(false)
+                            .help(model.balanceDetail ?? "")
+                            .accessibilityLabel(model.balanceDetail ?? text)
+                    }
                 }
                 .frame(width: 140, height: 134)
                 .contentShape(Rectangle())

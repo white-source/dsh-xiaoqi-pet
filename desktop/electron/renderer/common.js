@@ -163,6 +163,22 @@
     return parts.join(' · ') || text('All sessions are quiet', '所有会话都在休息');
   }
 
+
+  function balanceText(balance) {
+    if (!balance || balance.status !== 'ready' || !balance.amount) return '';
+    const symbol = balance.currency === 'USD' ? '$' : '¥';
+    return `${symbol}${balance.amount}`;
+  }
+
+  function balanceDetail(balance) {
+    if (!balance || balance.status !== 'ready') return '';
+    const symbol = balance.currency === 'USD' ? '$' : '¥';
+    return text(
+      `Balance ${symbol}${balance.amount || '0'} · recharge ${symbol}${balance.recharge || '0'} · bonus ${symbol}${balance.bonus || '0'}`,
+      `余额 ${symbol}${balance.amount || '0'} · 充值 ${symbol}${balance.recharge || '0'} · 赠送 ${symbol}${balance.bonus || '0'}`
+    );
+  }
+
   const api = {
     text,
     escapeHtml,
@@ -179,6 +195,8 @@
     elapsedFor,
     trail,
     summary,
+    balanceText,
+    balanceDetail,
     isZh: zh,
   };
   window.Xiaoqi = api;

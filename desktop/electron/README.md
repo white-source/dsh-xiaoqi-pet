@@ -44,6 +44,7 @@ Otherwise launch it manually from the built folder.
 - Two or more tasks show a task panel with one color-coded bordered card per task; cards show checklist/action progress and a recent trail.
 - Click a task card to send the open-session command to DSH and bring the DSH app forward via `dsh://open`.
 - The tray menu can show/hide the pet, open the panel, or quit.
+- The signed-in DSH account wallet balance is shown on the pet's belly; it refreshes about once a minute and is hidden when signed out.
 - Native notifications are used for new waiting tasks and background completions.
 - Reads the bridge from:
   - macOS: `~/Library/Application Support/XiaoqiPet/bridge.json`

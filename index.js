@@ -12,6 +12,7 @@ const HOST_CACHE_MS = 1_500;
 const COMMAND_TTL_MS = 30_000;
 const MAX_BODY = 64 * 1024;
 const MAX_TASKS = 16;
+const BALANCE_TTL_MS = 60_000;
 
 let token = '';
 
@@ -303,6 +304,9 @@ export function apply(ctx) {
   const bridgePath = appSupportPath();
   let disposed = false;
   let clientSnapshot = null;
+  let balanceCache = null;
+  let balanceCachedAt = 0;
+  let balancePending = null;
   let pendingCommand = null;
   let desktopSeenAt = 0;
   let hostCache = null;
@@ -472,6 +476,83 @@ export function apply(ctx) {
     });
   }
 
+  function balanceNumber(value) {
+    const number = Number(String(value ?? '').replace(/[^0-9.-]/g, ''));
+    return Number.isFinite(number) ? number : 0;
+  }
+
+  function walletCurrency(wallet) {
+    return wallet && (wallet.currency === 'USD' || wallet.currency === 'CNY') ? wallet.currency : null;
+  }
+
+  function selectBalance(details) {
+    if (!details || details.status !== 'ready') return null;
+    const main = Array.isArray(details.value) ? details.value : [];
+    const bonus = Array.isArray(details.bonusWallets) ? details.bonusWallets : [];
+    const all = [...main, ...bonus];
+    if (all.length === 0) return null;
+    const currency = walletCurrency(main[0]) || walletCurrency(bonus[0]) || 'CNY';
+    const primary = main.find((wallet) => walletCurrency(wallet) === currency);
+    const extra = bonus.find((wallet) => walletCurrency(wallet) === currency);
+    const recharge = balanceNumber(primary?.balance);
+    const gift = balanceNumber(extra?.balance);
+    return {
+      status: 'ready',
+      currency,
+      amount: (recharge + gift).toFixed(2),
+      recharge: recharge.toFixed(2),
+      bonus: gift.toFixed(2),
+      updatedAt: Date.now(),
+    };
+  }
+
+  function accountClientMetadata() {
+    return {
+      version: '1.5.2',
+      locale: 'zh-CN',
+      timezoneOffsetSeconds: -new Date().getTimezoneOffset() * 60,
+    };
+  }
+
+  async function refreshBalance(force = false) {
+    const now = Date.now();
+    if (!force && balanceCache && now - balanceCachedAt < BALANCE_TTL_MS) return balanceCache;
+    if (balancePending) return balancePending;
+    balancePending = (async () => {
+      const account = ctx.get('deepseekAccount');
+      if (!account || typeof account.getBalance !== 'function') {
+        balanceCache = { status: 'unavailable', updatedAt: Date.now() };
+        balanceCachedAt = Date.now();
+        return balanceCache;
+      }
+      try {
+        const details = await account.getBalance(accountClientMetadata());
+        if (details === null) {
+          balanceCache = { status: 'signed-out', updatedAt: Date.now() };
+        } else {
+          const value = selectBalance(details);
+          balanceCache = value ?? { status: 'failed', updatedAt: Date.now() };
+        }
+      } catch {
+        balanceCache = balanceCache && balanceCache.status === 'ready'
+          ? { ...balanceCache, stale: true }
+          : { status: 'error', updatedAt: Date.now() };
+      }
+      balanceCachedAt = Date.now();
+      return balanceCache;
+    })().finally(() => {
+      balancePending = null;
+    });
+    return balancePending;
+  }
+
+  function currentBalance() {
+    if (!balanceCache || Date.now() - balanceCachedAt >= BALANCE_TTL_MS) {
+      void refreshBalance();
+    }
+    return balanceCache;
+  }
+
   async function writeBridgeFile() {
     const origin = webOrigin();
     if (origin === '') {
@@ -561,11 +642,11 @@ export function apply(ctx) {
     const now = Date.now();
     if (clientSnapshot && now - clientSnapshot.receivedAt <= CLIENT_FRESH_MS) {
       const state = sanitizeBridge({ source: 'client', tasks: clientSnapshot.tasks });
-      return { ...state, tasks: decorateTasks(state.tasks) };
+      return { ...state, tasks: decorateTasks(state.tasks), balance: currentBalance() };
     }
     const tasks = await hostTasks();
     const state = sanitizeBridge({ source: 'host', tasks });
-    return { ...state, tasks: decorateTasks(state.tasks) };
+    return { ...state, tasks: decorateTasks(state.tasks), balance: currentBalance() };
   }
 
   async function launchDesktop() {
@@ -589,6 +670,18 @@ export function apply(ctx) {
       const url = new URL(request.url ?? '/', `http://${request.headers.host ?? '127.0.0.1'}`);
       const path = url.pathname;
       try {
+        if (request.method === 'GET' && path === `${BASE}/api/balance`) {
+          if (!authorized(request)) {
+            json(response, 401, { error: 'unauthorized' });
+            return;
+          }
+          if (url.searchParams.get('refresh') === '1') {
+            await refreshBalance(true);
+          }
+          json(response, 200, { balance: currentBalance() });
+          return;
+        }
+
         if (request.method === 'GET' && path === `${BASE}/api/state`) {
           if (!authorized(request)) {
             json(response, 401, { error: 'unauthorized' });

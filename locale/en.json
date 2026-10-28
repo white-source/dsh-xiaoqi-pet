@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "Xiaoqi Desk Pet",
-    "description": "A DSH companion with a macOS native pet and a Windows/Linux Electron companion. Color-coded bordered task cards, per-task drawers, progress and notices."
+    "description": "A DSH companion with a macOS native pet and a Windows/Linux Electron companion. Shows the DSH account balance on the pet, color-coded task cards, progress and notices."
   }
 }

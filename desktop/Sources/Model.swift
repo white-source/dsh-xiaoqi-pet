@@ -277,11 +277,22 @@ struct RemoteTask: Codable, Identifiable, Equatable {
     let progress: RemoteProgress?
 }
 
+struct RemoteBalance: Codable, Equatable {
+    let status: String
+    let currency: String?
+    let amount: String?
+    let recharge: String?
+    let bonus: String?
+    let updatedAt: Double?
+    let stale: Bool?
+}
+
 struct BridgeState: Codable, Equatable {
     let schemaVersion: Int
     let generatedAt: Double
     let source: String
     let tasks: [RemoteTask]
+    let balance: RemoteBalance?
 }
 
 struct BridgeDescriptor: Codable {
@@ -431,6 +442,7 @@ final class BridgeClient {
 
 final class PetModel: ObservableObject {
     @Published private(set) var tasks: [RemoteTask] = []
+    @Published private(set) var balance: RemoteBalance?
     @Published private(set) var connected = false
     @Published private(set) var source = "host"
     @Published private(set) var lastUpdated: Date?
@@ -511,11 +523,35 @@ final class PetModel: ObservableObject {
         return parts.joined(separator: " · ")
     }
 
+    private func currencySymbol(_ currency: String?) -> String {
+        currency == "USD" ? "$" : "¥"
+    }
+
+    var balanceText: String? {
+        guard let balance,
+              balance.status == "ready",
+              let amount = balance.amount,
+              !amount.isEmpty else { return nil }
+        return "\(currencySymbol(balance.currency))\(amount)"
+    }
+
+    var balanceDetail: String? {
+        guard let balance, balance.status == "ready" else { return nil }
+        let symbol = currencySymbol(balance.currency)
+        let recharge = balance.recharge ?? "0"
+        let bonus = balance.bonus ?? "0"
+        return L10n.text(
+            "Balance \(symbol)\(balance.amount ?? "0") · recharge \(symbol)\(recharge) · bonus \(symbol)\(bonus)",
+            "余额 \(symbol)\(balance.amount ?? "0") · 充值 \(symbol)\(recharge) · 赠送 \(symbol)\(bonus)"
+        )
+    }
+
     func apply(_ state: BridgeState) {
         let incoming = state.tasks
         let oldKinds = previousKinds
         let oldWaiting = previousWaiting
         tasks = incoming
+        balance = state.balance
         connected = true
         source = state.source
         lastUpdated = Date()
