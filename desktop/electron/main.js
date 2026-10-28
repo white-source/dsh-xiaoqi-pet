@@ -1,9 +1,10 @@
 'use strict';
 
-const { app, BrowserWindow, ipcMain, screen, Tray, Menu, nativeImage, shell, Notification } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, screen, Tray, Menu, nativeImage, shell, Notification } = require('electron');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const { spawnSync } = require('node:child_process');
 
 const PET_W = 196;
 const PANEL_W = 372;
@@ -123,7 +124,27 @@ function defaultPosition() {
   };
 }
 
+function nativePetRunning() {
+  if (!isMac) return false;
+  try {
+    const result = spawnSync('pgrep', ['-f', 'Xiaoqi Pet.app/Contents/MacOS/XiaoqiPet'], { encoding: 'utf8' });
+    return result.status === 0;
+  } catch {
+    return false;
+  }
+}
+
 function start() {
+  if (nativePetRunning()) {
+    dialog.showMessageBoxSync({
+      type: 'info',
+      title: 'Xiaoqi',
+      message: 'Please use the native macOS Xiaoqi',
+      detail: 'A native Xiaoqi pet is already running. The cross-platform Electron version will exit so two pets do not appear on the desktop.\n\nmacOS 原生小栖正在运行；跨平台版已退出，避免桌面上同时出现两个小栖。',
+    });
+    app.quit();
+    return;
+  }
   if (isMac && app.dock) app.dock.hide();
   loadPosition();
   const initial = petPosition || defaultPosition();

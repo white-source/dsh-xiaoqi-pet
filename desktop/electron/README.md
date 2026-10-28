@@ -2,7 +2,7 @@
 
 This is the cross-platform companion built with Electron. It reads the same loopback bridge as the macOS Swift app, shows the pet and task panel, and supports Windows, Linux and macOS.
 
-The macOS Swift app in `desktop/` remains the recommended native experience on macOS. This Electron app is primarily for Windows and Linux, and is also useful for development.
+The macOS Swift app in `desktop/` remains the recommended native experience on macOS. This Electron app is primarily for Windows and Linux, and is also useful for development. On macOS it refuses to start while the native app is running, so two pets cannot appear at once.
 
 ## Run from source
 
