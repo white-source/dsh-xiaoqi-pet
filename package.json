@@ -1,9 +1,9 @@
 {
   "name": "dsh-xiaoqi-pet",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": false,
   "type": "module",
-  "description": "Xiaoqi Desk Pet — a DSH companion with a real macOS desktop pet. Multiple running sessions fan out as compact progress drawers; notices, drag/pin and task-specific steps included.",
+  "description": "Xiaoqi Desk Pet — a DSH companion with a real macOS desktop pet. Multiple running sessions fan out as task-name bubbles and drawer cards with task-specific progress, plus completion and attention notices.",
   "license": "MIT",
   "keywords": [
     "dsh",

@@ -349,6 +349,113 @@ final class DrawerWindowController {
     }
 }
 
+final class BubbleWindowController {
+    let model: PetModel
+    let panel: XiaoqiPanel
+    private weak var petController: PetWindowController?
+    private var tasksCancellable: AnyCancellable?
+    private var fadingOut = false
+
+    init(model: PetModel, petController: PetWindowController) {
+        self.model = model
+        self.petController = petController
+        panel = XiaoqiPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 244, height: 66),
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
+        panel.isFloatingPanel = true
+        panel.level = .floating
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        panel.hidesOnDeactivate = false
+        panel.isOpaque = false
+        panel.backgroundColor = .clear
+        panel.hasShadow = false
+        panel.isReleasedWhenClosed = false
+        panel.animationBehavior = .none
+        panel.isRestorable = false
+        panel.ignoresMouseEvents = true
+        panel.contentView = NSHostingView(rootView: TaskBubbleFanView(model: model))
+        tasksCancellable = model.$tasks
+            .removeDuplicates()
+            .sink { [weak self] _ in self?.refresh() }
+        refresh(animated: false)
+    }
+
+    func petVisibilityChanged() {
+        refresh(animated: false)
+    }
+
+    func reposition(near petFrame: NSRect?) {
+        guard panel.isVisible else { return }
+        panel.setFrameOrigin(targetOrigin(for: panel.frame.size, petFrame: petFrame))
+    }
+
+    private func desiredWidth() -> CGFloat {
+        let count = min(model.tasks.count, 3)
+        guard count > 0 else { return 244 }
+        return 20 + CGFloat(count) * 224 + CGFloat(count - 1) * 8
+    }
+
+    private func refresh(animated: Bool = true) {
+        guard !model.tasks.isEmpty, petController?.isVisible == true else {
+            hide()
+            return
+        }
+        let size = NSSize(width: desiredWidth(), height: 66)
+        panel.setContentSize(size)
+        let target = targetOrigin(for: size, petFrame: petController?.panel.frame)
+        if panel.isVisible {
+            panel.alphaValue = 1
+            panel.setFrameOrigin(target)
+            return
+        }
+        panel.setFrameOrigin(NSPoint(x: target.x, y: target.y - 6))
+        panel.alphaValue = 0
+        panel.orderFrontRegardless()
+        if animated {
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.2
+                panel.animator().alphaValue = 1
+            }
+        } else {
+            panel.alphaValue = 1
+        }
+        panel.setFrameOrigin(target)
+    }
+
+    private func targetOrigin(for size: NSSize, petFrame: NSRect?) -> NSPoint {
+        guard let pet = petFrame ?? petController?.panel.frame else { return .zero }
+        let screen = visibleFrame(containing: NSPoint(x: pet.midX, y: pet.midY))
+        var x = pet.minX
+        if x + size.width > screen.maxX - 8 {
+            x = screen.maxX - size.width - 8
+        }
+        x = min(max(x, screen.minX + 8), max(screen.minX + 8, screen.maxX - size.width - 8))
+        var y = pet.minY - size.height - 4
+        if y < screen.minY + 4 {
+            y = pet.maxY + 4
+        }
+        y = min(max(y, screen.minY + 8), max(screen.minY + 8, screen.maxY - size.height - 8))
+        return NSPoint(x: x, y: y)
+    }
+
+    private func hide() {
+        guard panel.isVisible, !fadingOut else { return }
+        fadingOut = true
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.14
+            panel.animator().alphaValue = 0
+        } completionHandler: { [weak self] in
+            guard let self else { return }
+            self.panel.orderOut(nil)
+            self.panel.alphaValue = 1
+            self.fadingOut = false
+        }
+    }
+}
+
 final class NoticeWindowController {
     private let panel: XiaoqiPanel
     private var hideTimer: Timer?

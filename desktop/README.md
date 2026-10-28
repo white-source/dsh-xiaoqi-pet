@@ -20,6 +20,7 @@ The app is an `LSUIElement` (no Dock icon). Use the paw icon in the menu bar to 
 
 - The pet always floats above other windows and can be dragged anywhere. The pin freezes the position.
 - The caption under the pet follows the active task: the current checklist item or concrete action where one is available, otherwise the phase (`Thinking`, `Running a tool`, `Writing the answer`).
+- Every active task also gets a compact bubble under the pet, beginning with the task name; multiple bubbles are staggered so the tasks stay distinguishable.
 - When two or more sessions are active, a stack of drawer cards slides out beside the pet. Each card shows one task's current checklist item or concrete action, elapsed time and recent action trail.
 - The board row shows the current checklist item and concrete action (for example `修改 client.js` or `运行：Build the macOS app`), elapsed time, and the last three actions.
 - Clicking a row queues an open-session command for DSH and brings the Harness window forward.

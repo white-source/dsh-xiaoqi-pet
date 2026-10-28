@@ -112,16 +112,18 @@ struct PetStageView: View {
                       : L10n.text("Pin position", "固定位置"))
             }
 
-            Text(model.caption)
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 4)
-                .background(.ultraThinMaterial, in: Capsule())
-                .overlay(Capsule().strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5))
-                .padding(.top, -4)
-                .allowsHitTesting(false)
+            if model.tasks.isEmpty {
+                Text(model.caption)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(.ultraThinMaterial, in: Capsule())
+                    .overlay(Capsule().strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5))
+                    .padding(.top, -4)
+                    .allowsHitTesting(false)
+            }
         }
         .frame(width: 164, height: 186, alignment: .bottom)
         .onHover { value in
@@ -683,6 +685,115 @@ struct DrawerTaskCard: View {
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
         .help(L10n.text("Focus DeepSeek Harness and open this session", "切到 DeepSeek Harness 并打开这个会话"))
+    }
+}
+
+struct TaskBubbleFanView: View {
+    @ObservedObject var model: PetModel
+
+    private var visible: [RemoteTask] { Array(model.tasks.prefix(3)) }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            ForEach(Array(visible.enumerated()), id: \.element.id) { index, task in
+                TaskBubbleView(task: task)
+                    .offset(y: [0, 10, 4][index % 3])
+            }
+        }
+        .frame(width: CGFloat(visible.count) * 224 + CGFloat(max(0, visible.count - 1)) * 8, alignment: .leading)
+        .padding(.horizontal, 10)
+        .padding(.top, 2)
+        .animation(.spring(response: 0.35, dampingFraction: 0.84), value: visible.map(\.id))
+    }
+}
+
+struct TaskBubbleView: View {
+    let task: RemoteTask
+
+    private var statusColor: Color {
+        switch task.kind {
+        case "waiting": return PetMood.waiting.color
+        case "running": return PetMood.running.color
+        case "done": return PetMood.done.color
+        default: return .secondary
+        }
+    }
+
+    private var actionText: String {
+        if task.kind == "waiting" {
+            return L10n.pending(kind: task.pendingKind, tool: task.pendingTool)
+        }
+        if let progress = task.progress { return L10n.actionLine(progress) }
+        return L10n.status(task)
+    }
+
+    private var elapsed: String {
+        if let progress = task.progress { return L10n.elapsed(progress.elapsedMs) }
+        return L10n.relative(task.updatedAt)
+    }
+
+    private var actionSymbol: String {
+        if task.kind == "waiting" { return "exclamationmark.circle.fill" }
+        guard let kind = task.progress?.action?.kind else { return "circle.dotted" }
+        switch kind {
+        case "read", "write", "edit": return "doc.text.fill"
+        case "bash": return "terminal.fill"
+        case "glob", "grep": return "magnifyingglass"
+        case "image": return "photo.fill"
+        case "plugin": return "puzzlepiece.extension.fill"
+        case "inspect": return "wrench.and.screwdriver.fill"
+        case "search", "fetch": return "globe"
+        case "subagent": return "person.2.fill"
+        case "workflow": return "point.3.connected.trianglepath.dotted"
+        case "todo": return "checklist"
+        default: return "circle.dotted"
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(spacing: 6) {
+                Text(task.title)
+                    .font(.system(size: 11.2, weight: .semibold))
+                    .foregroundStyle(.primary.opacity(0.92))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                Spacer(minLength: 4)
+                Circle()
+                    .fill(statusColor)
+                    .frame(width: 5, height: 5)
+                Text(L10n.status(task))
+                    .font(.system(size: 8.8, weight: .medium))
+                    .foregroundStyle(statusColor)
+                    .lineLimit(1)
+            }
+            HStack(spacing: 5) {
+                Image(systemName: actionSymbol)
+                    .font(.system(size: 8.5, weight: .semibold))
+                    .foregroundStyle(statusColor)
+                Text(actionText)
+                    .font(.system(size: 9.8, weight: .medium))
+                    .foregroundStyle(.primary.opacity(0.84))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                Spacer(minLength: 4)
+                Text(elapsed)
+                    .font(.system(size: 8.8, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .fixedSize()
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .frame(width: 224, height: 52, alignment: .topLeading)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 15, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 15, style: .continuous)
+                .strokeBorder(Color.primary.opacity(0.1), lineWidth: 0.5)
+        )
+        .shadow(color: .black.opacity(0.2), radius: 10, y: 5)
+        .allowsHitTesting(false)
     }
 }
 
