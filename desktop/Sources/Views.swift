@@ -524,6 +524,41 @@ struct TaskRowView: View {
     }
 }
 
+enum TaskPalette {
+    static let colors: [Color] = [
+        Color(red: 0.16, green: 0.56, blue: 0.50),
+        Color(red: 0.88, green: 0.56, blue: 0.18),
+        Color(red: 0.31, green: 0.50, blue: 0.94),
+        Color(red: 0.62, green: 0.45, blue: 0.90),
+        Color(red: 0.87, green: 0.39, blue: 0.56),
+        Color(red: 0.42, green: 0.65, blue: 0.27),
+        Color(red: 0.90, green: 0.44, blue: 0.30),
+    ]
+
+    static func assignments(for tasks: [RemoteTask]) -> [String: Color] {
+        var used = Set<Int>()
+        var result: [String: Color] = [:]
+        for task in tasks {
+            var index = stableIndex(task.id)
+            while used.contains(index) {
+                index = (index + 1) % colors.count
+            }
+            used.insert(index)
+            result[task.id] = colors[index]
+        }
+        return result
+    }
+
+    private static func stableIndex(_ value: String) -> Int {
+        var hash: UInt64 = 1_469_598_103_934_665_603
+        for byte in value.utf8 {
+            hash ^= UInt64(byte)
+            hash = hash &* 1_099_511_628_211
+        }
+        return Int(hash % UInt64(colors.count))
+    }
+}
+
 struct TaskDrawerView: View {
     @ObservedObject var model: PetModel
     let onOpen: (RemoteTask) -> Void
@@ -532,10 +567,16 @@ struct TaskDrawerView: View {
     private var extra: Int { max(0, model.tasks.count - 4) }
 
     var body: some View {
+        let palette = TaskPalette.assignments(for: visible)
         VStack(alignment: .leading, spacing: 6) {
             ForEach(Array(visible.enumerated()), id: \.element.id) { index, task in
-                DrawerTaskCard(task: task, index: index, onOpen: onOpen)
-                    .transition(.move(edge: .leading).combined(with: .opacity))
+                DrawerTaskCard(
+                    task: task,
+                    index: index,
+                    accent: palette[task.id] ?? PetMood.running.color,
+                    onOpen: onOpen
+                )
+                .transition(.move(edge: .leading).combined(with: .opacity))
             }
             if extra > 0 {
                 Text(L10n.text("+\(extra) more in the board", "看板里还有 \(extra) 个任务"))
@@ -554,17 +595,9 @@ struct TaskDrawerView: View {
 struct DrawerTaskCard: View {
     let task: RemoteTask
     let index: Int
+    let accent: Color
     let onOpen: (RemoteTask) -> Void
     @State private var hovering = false
-
-    private var statusColor: Color {
-        switch task.kind {
-        case "waiting": return PetMood.waiting.color
-        case "running": return PetMood.running.color
-        case "done": return PetMood.done.color
-        default: return .secondary
-        }
-    }
 
     private var progress: RemoteProgress? { task.progress }
     private var todo: String { progress.map(L10n.todoLine) ?? "" }
@@ -604,11 +637,14 @@ struct DrawerTaskCard: View {
         } label: {
             HStack(alignment: .top, spacing: 9) {
                 RoundedRectangle(cornerRadius: 2, style: .continuous)
-                    .fill(statusColor)
+                    .fill(accent)
                     .frame(width: 3)
                     .padding(.vertical, 3)
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
+                        Circle()
+                            .fill(accent)
+                            .frame(width: 5, height: 5)
                         Text(task.title)
                             .font(.system(size: 12.2, weight: .semibold))
                             .lineLimit(1)
@@ -616,14 +652,14 @@ struct DrawerTaskCard: View {
                         Spacer(minLength: 4)
                         Text(L10n.status(task))
                             .font(.system(size: 9.4, weight: .medium))
-                            .foregroundStyle(statusColor)
+                            .foregroundStyle(accent)
                             .lineLimit(1)
                     }
                     if !todo.isEmpty {
                         HStack(spacing: 5) {
                             Image(systemName: "checklist")
                                 .font(.system(size: 9.5, weight: .semibold))
-                                .foregroundStyle(statusColor)
+                                .foregroundStyle(accent)
                             Text(todo)
                                 .font(.system(size: 10.7, weight: .medium))
                                 .foregroundStyle(.primary.opacity(0.82))
@@ -639,7 +675,7 @@ struct DrawerTaskCard: View {
                     HStack(spacing: 5) {
                         Image(systemName: actionSymbol)
                             .font(.system(size: 9.5, weight: .semibold))
-                            .foregroundStyle(statusColor)
+                            .foregroundStyle(accent)
                         Text(actionText)
                             .font(.system(size: 11.4, weight: .medium))
                             .foregroundStyle(.primary.opacity(0.9))
@@ -675,7 +711,7 @@ struct DrawerTaskCard: View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .strokeBorder(Color.primary.opacity(hovering ? 0.18 : 0.09), lineWidth: 0.6)
+                    .strokeBorder(accent.opacity(hovering ? 0.34 : 0.18), lineWidth: 0.6)
             )
             .shadow(color: .black.opacity(hovering ? 0.26 : 0.16), radius: hovering ? 16 : 10, y: 6)
             .offset(x: CGFloat(index) * 6 + (hovering ? 5 : 0))
@@ -710,7 +746,7 @@ struct TaskBubbleFanView: View {
 struct TaskBubbleView: View {
     let task: RemoteTask
 
-    private var statusColor: Color {
+    private var accent: Color {
         switch task.kind {
         case "waiting": return PetMood.waiting.color
         case "running": return PetMood.running.color
@@ -760,17 +796,17 @@ struct TaskBubbleView: View {
                     .truncationMode(.tail)
                 Spacer(minLength: 4)
                 Circle()
-                    .fill(statusColor)
+                    .fill(accent)
                     .frame(width: 5, height: 5)
                 Text(L10n.status(task))
                     .font(.system(size: 8.8, weight: .medium))
-                    .foregroundStyle(statusColor)
+                    .foregroundStyle(accent)
                     .lineLimit(1)
             }
             HStack(spacing: 5) {
                 Image(systemName: actionSymbol)
                     .font(.system(size: 8.5, weight: .semibold))
-                    .foregroundStyle(statusColor)
+                    .foregroundStyle(accent)
                 Text(actionText)
                     .font(.system(size: 9.8, weight: .medium))
                     .foregroundStyle(.primary.opacity(0.84))

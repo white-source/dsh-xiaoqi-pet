@@ -399,7 +399,7 @@ final class BubbleWindowController {
     }
 
     private func refresh(animated: Bool = true) {
-        guard !model.tasks.isEmpty, petController?.isVisible == true else {
+        guard model.tasks.count == 1, petController?.isVisible == true else {
             hide()
             return
         }
