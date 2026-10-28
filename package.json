@@ -1,6 +1,6 @@
 {
   "name": "dsh-xiaoqi-pet",
-  "version": "1.5.3",
+  "version": "1.5.4",
   "private": false,
   "type": "module",
   "description": "Xiaoqi Desk Pet — a DSH companion with a macOS native pet and a cross-platform Electron companion for Windows/Linux. Color-coded task cards, progress, notices and click-to-open.",

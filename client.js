@@ -113,6 +113,7 @@ window.__ModuleLoader__.load({
       emptyCount: '{count} sessions are resting',
       emptyNoSessions: 'No sessions yet. Start one and Xiaoqi will keep watch.',
       balanceDetail: 'DSH account balance {amount} · recharge {recharge} · bonus {bonus}',
+      closePet: 'Close Xiaoqi',
       loading: 'Reading sessions…',
       footerHint: 'Drag Xiaoqi anywhere · pin with the pin',
       footerPinned: 'Position pinned · click the pin to unlock',
@@ -199,6 +200,7 @@ window.__ModuleLoader__.load({
       emptyCount: '{count} 个会话在休息',
       emptyNoSessions: '还没有会话。开始一个任务，小栖会替你看守。',
       balanceDetail: 'DSH 账户余额 {amount} · 充值 {recharge} · 赠送 {bonus}',
+      closePet: '关闭小栖',
       loading: '正在读取会话…',
       footerHint: '拖动小栖到任意位置 · 用图钉固定',
       footerPinned: '位置已固定 · 点击图钉可解锁',
@@ -265,6 +267,8 @@ window.__ModuleLoader__.load({
         height: 100%;
         overflow: visible;
         filter: drop-shadow(0 8px 14px rgba(0, 0, 0, .18));
+        transition: transform .16s ease-out, filter .16s ease-out;
+      }
       .xq-balance {
         position: absolute;
         left: 50%;
@@ -283,8 +287,6 @@ window.__ModuleLoader__.load({
         white-space: nowrap;
         pointer-events: none;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.24);
-      }
-        transition: transform .16s ease-out, filter .16s ease-out;
       }
       .xq-art .xq-body {
         transform-box: fill-box;
@@ -347,6 +349,33 @@ window.__ModuleLoader__.load({
       .xq-badge.waiting { background: var(--dsw-alias-state-warn-primary, #d9942f); animation: xq-badge 1.8s ease-in-out infinite; }
       .xq-badge.running { background: var(--dsw-alias-brand-primary, #2f7d78); }
       .xq-badge.done { background: var(--dsw-alias-state-success-primary, #16845e); }
+      .xq-context-menu {
+        position: fixed;
+        z-index: 2147483004;
+        min-width: 136px;
+        padding: 4px;
+        border: 1px solid var(--dsw-alias-border-l1, rgba(127, 127, 140, .3));
+        border-radius: 10px;
+        background: color-mix(in srgb, var(--dsw-alias-bg-overlay, #222329) 94%, transparent);
+        box-shadow: 0 10px 28px rgba(0, 0, 0, .24);
+        backdrop-filter: blur(14px);
+        pointer-events: auto;
+      }
+      .xq-context-item {
+        display: block;
+        width: 100%;
+        padding: 6px 9px;
+        border: 0;
+        border-radius: 7px;
+        background: transparent;
+        color: var(--dsw-alias-label-primary, #f5f6f7);
+        font: inherit;
+        font-size: 11px;
+        line-height: 16px;
+        text-align: left;
+        cursor: pointer;
+      }
+      .xq-context-item:hover { background: color-mix(in srgb, var(--dsw-alias-label-primary, #fff) 9%, transparent); }
       .xq-caption {
         position: absolute;
         left: 50%;
@@ -1321,6 +1350,8 @@ window.__ModuleLoader__.load({
       const [desktopActive, setDesktopActive] = React.useState(false);
       const [progressById, setProgressById] = React.useState({});
       const [balance, setBalance] = React.useState(null);
+      const [closed, setClosed] = React.useState(false);
+      const [contextMenu, setContextMenu] = React.useState(null);
 
       const posRef = React.useRef(pos);
       const openRef = React.useRef(open);
@@ -1351,6 +1382,17 @@ window.__ModuleLoader__.load({
           window.clearInterval(timer);
         };
       }, []);
+
+      React.useEffect(() => {
+        if (!contextMenu) return undefined;
+        const dismiss = (event) => {
+          const target = event.target;
+          if (target instanceof Element && target.closest('.xq-context-menu')) return;
+          setContextMenu(null);
+        };
+        window.addEventListener('pointerdown', dismiss, true);
+        return () => window.removeEventListener('pointerdown', dismiss, true);
+      }, [contextMenu]);
 
       const tasks = deriveTasks(list, statuses, dismissed);
       const waiting = tasks.filter((task) => task.kind === 'waiting');
@@ -1707,7 +1749,7 @@ window.__ModuleLoader__.load({
       const taskColors = taskColorMap(tasks);
       const panelLabel = petPanelLabel(t, waiting.length, running.length, done.length);
 
-      if (desktopActive) return null;
+      if (desktopActive || closed) return null;
 
       return h(React.Fragment, null,
         h('style', { key: 'xq-style' }, CSS),
@@ -1732,6 +1774,14 @@ window.__ModuleLoader__.load({
           onPointerUp: finishDrag,
           onPointerCancel: finishDrag,
           onClick: onPetClick,
+          onContextMenu: (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            setContextMenu({
+              x: clamp(event.clientX, 8, Math.max(8, viewport.width - 148)),
+              y: clamp(event.clientY, 8, Math.max(8, viewport.height - 48)),
+            });
+          },
         },
         h(PetArt, { mood }),
         balanceLabel(balance)
@@ -1757,6 +1807,22 @@ window.__ModuleLoader__.load({
           onClick: (event) => { event.stopPropagation(); toggleLock(); },
         }, h(PinIcon, { filled: locked })),
         h('span', { className: 'xq-caption', title: caption }, caption),
+        contextMenu
+          ? h('div', {
+            className: 'xq-context-menu',
+            style: { left: `${contextMenu.x}px`, top: `${contextMenu.y}px` },
+            role: 'menu',
+            onPointerDown: (event) => event.stopPropagation(),
+          }, h('button', {
+            type: 'button',
+            className: 'xq-context-item',
+            role: 'menuitem',
+            onClick: () => {
+              setContextMenu(null);
+              setClosed(true);
+            },
+          }, t('closePet')))
+          : null,
         !open && notices.length > 0
           ? h('div', {
             className: 'xq-notices',
